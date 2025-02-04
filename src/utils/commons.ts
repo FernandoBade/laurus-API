@@ -1,6 +1,7 @@
 import path from 'path';
-import { Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { createLogger, format, transports, addColors } from 'winston';
+import Joi from 'joi';
 
 //#region 🔹 Logger
 const logPath = path.join(__dirname, './logs/');
@@ -60,16 +61,45 @@ export const logger = createLogger({
     ],
 });
 
-//#region 🔹 Resposta Padrão da API
 export function responderAPI(
     res: Response,
     status: number,
     mensagem: string,
     dados: any = null
 ) {
-    const resposta: any = { mensagem };
-    if (dados) resposta.dados = Array.isArray(dados) ? { total: dados.length, resultados: dados } : dados;
+    const resposta: any = {
+        sucesso: status >= 200 && status < 300,
+        mensagem
+    };
+
+    if (dados) {
+        if (Array.isArray(dados)) {
+            resposta.total = dados.length;
+            resposta.resultados = dados;
+        } else if (typeof dados === 'object') {
+            resposta.dados = dados;
+        } else {
+            resposta.detalhes = dados;
+        }
+    }
 
     res.status(status).json(resposta);
 }
-//#endregion Resposta API
+
+
+export function validarCorpoDaRequisicao(schema: Joi.Schema, local: 'body' | 'params' | 'query' = 'body') {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const { error, value } = schema.validate(req[local], { abortEarly: false, stripUnknown: true });
+
+        if (error) {
+            return responderAPI(res, 400, "Erro na validação dos dados", {
+                codigo: "VALIDACAO_FALHOU",
+                erros: error.details.map(err => err.message)
+            });
+        }
+
+        req[local] = value;
+        next();
+    };
+}
+

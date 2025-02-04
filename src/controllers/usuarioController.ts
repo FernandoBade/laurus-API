@@ -1,15 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { UsuarioService } from '../services/usuarioService';
-import { responderAPI } from '../utils/commons';
+import { StatusHttp } from '../utils/enum';
 
 class UsuarioController {
     static async cadastrarUsuario(req: Request, res: Response, next: NextFunction) {
         try {
-            const usuarioExistente = await UsuarioService.obterUsuarioPorEmail(req.body.email);
-            if (usuarioExistente) return responderAPI(res, 400, 'erro_emailJaCadastrado');
+            if (await UsuarioService.obterUsuarioPorEmail(req.body.email)) {
+                return res.status(StatusHttp.REQUISICAO_INVALIDA).json({ sucesso: false, mensagem: "E-mail já cadastrado" });
+            }
 
             const novoUsuario = await UsuarioService.criarUsuario(req.body);
-            responderAPI(res, 201, 'sucesso_cadastrar', novoUsuario);
+            res.status(StatusHttp.CRIADO).json({ sucesso: true, dados: novoUsuario });
         } catch (erro) {
             next(erro);
         }
@@ -18,7 +19,7 @@ class UsuarioController {
     static async listarUsuarios(req: Request, res: Response, next: NextFunction) {
         try {
             const usuarios = await UsuarioService.listarUsuarios();
-            responderAPI(res, 200, 'sucesso_buscar', usuarios);
+            res.status(StatusHttp.SUCESSO).json({ sucesso: true, dados: usuarios });
         } catch (erro) {
             next(erro);
         }
@@ -27,20 +28,11 @@ class UsuarioController {
     static async obterUsuarioPorId(req: Request, res: Response, next: NextFunction) {
         try {
             const usuario = await UsuarioService.obterUsuarioPorId(req.params.id);
-            if (!usuario) return responderAPI(res, 404, 'erro_encontrar');
+            if (!usuario) {
+                return res.status(StatusHttp.NAO_ENCONTRADO).json({ sucesso: false, mensagem: "Usuário não encontrado" });
+            }
 
-            responderAPI(res, 200, 'sucesso_buscar', usuario);
-        } catch (erro) {
-            next(erro);
-        }
-    }
-
-    static async obterUsuariosPorNome(req: Request, res: Response, next: NextFunction) {
-        try {
-            const usuarios = await UsuarioService.obterUsuariosPorNome(req.params.nome);
-            if (!usuarios.length) return responderAPI(res, 404, 'erro_encontrar');
-
-            responderAPI(res, 200, 'sucesso_buscar', usuarios);
+            res.status(StatusHttp.SUCESSO).json({ sucesso: true, dados: usuario });
         } catch (erro) {
             next(erro);
         }
@@ -49,9 +41,11 @@ class UsuarioController {
     static async atualizarUsuario(req: Request, res: Response, next: NextFunction) {
         try {
             const usuarioAtualizado = await UsuarioService.atualizarUsuario(req.params.id, req.body);
-            if (!usuarioAtualizado) return responderAPI(res, 404, 'erro_encontrar');
+            if (!usuarioAtualizado) {
+                return res.status(StatusHttp.NAO_ENCONTRADO).json({ sucesso: false, mensagem: "Usuário não encontrado" });
+            }
 
-            responderAPI(res, 200, 'sucesso_atualizar', usuarioAtualizado);
+            res.status(StatusHttp.SUCESSO).json({ sucesso: true, dados: usuarioAtualizado });
         } catch (erro) {
             next(erro);
         }
@@ -60,7 +54,7 @@ class UsuarioController {
     static async excluirUsuario(req: Request, res: Response, next: NextFunction) {
         try {
             await UsuarioService.excluirUsuario(req.params.id);
-            responderAPI(res, 200, 'sucesso_excluir', { id: req.params.id });
+            res.status(StatusHttp.SUCESSO).json({ sucesso: true, mensagem: "Usuário excluído com sucesso" });
         } catch (erro) {
             next(erro);
         }
