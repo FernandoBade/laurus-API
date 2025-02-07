@@ -1,62 +1,84 @@
 import { Request, Response, NextFunction } from 'express';
 import { UsuarioService } from '../services/usuarioService';
-import { StatusHttp } from '../utils/enum';
+import { logger, tratarErro } from '../utils/commons';
 
 class UsuarioController {
     static async cadastrarUsuario(req: Request, res: Response, next: NextFunction) {
         try {
-            if (await UsuarioService.obterUsuarioPorEmail(req.body.email)) {
-                return res.status(StatusHttp.REQUISICAO_INVALIDA).json({ sucesso: false, mensagem: "E-mail já cadastrado" });
+            const {
+                email,
+                nome,
+                sobrenome,
+                senha,
+                dataNascimento: dataCadastro } = req.body;
+
+            if (!email || !nome || !sobrenome || !senha || !dataCadastro) {
+                return res.status(400).json({ sucesso: false, mensagem: "Todos os campos são obrigatórios" });
             }
 
             const novoUsuario = await UsuarioService.criarUsuario(req.body);
-            res.status(StatusHttp.CRIADO).json({ sucesso: true, dados: novoUsuario });
+            res.status(201).json({ sucesso: true, dados: novoUsuario });
+            logger.info(`Usuário ${nome} ${sobrenome} cadastrado com sucesso`);
         } catch (erro) {
-            next(erro);
+            tratarErro(erro, 'Erro ao cadastrar usuário', next);
         }
     }
 
     static async listarUsuarios(req: Request, res: Response, next: NextFunction) {
         try {
             const usuarios = await UsuarioService.listarUsuarios();
-            res.status(StatusHttp.SUCESSO).json({ sucesso: true, dados: usuarios });
+            res.status(200).json({ sucesso: true, dados: usuarios });
         } catch (erro) {
-            next(erro);
+            tratarErro(erro, 'Erro ao listar usuários', next);
         }
     }
 
     static async obterUsuarioPorId(req: Request, res: Response, next: NextFunction) {
         try {
-            const usuario = await UsuarioService.obterUsuarioPorId(req.params.id);
+            const { id } = req.params;
+            const usuario = await UsuarioService.obterUsuarioPorId(id);
             if (!usuario) {
-                return res.status(StatusHttp.NAO_ENCONTRADO).json({ sucesso: false, mensagem: "Usuário não encontrado" });
+                return res.status(404).json({ sucesso: false, mensagem: "Usuário não encontrado" });
             }
-
-            res.status(StatusHttp.SUCESSO).json({ sucesso: true, dados: usuario });
+            res.status(200).json({ sucesso: true, dados: usuario });
         } catch (erro) {
-            next(erro);
+            tratarErro(erro, 'Erro ao obter usuário por ID', next);
         }
     }
 
     static async atualizarUsuario(req: Request, res: Response, next: NextFunction) {
         try {
-            const usuarioAtualizado = await UsuarioService.atualizarUsuario(req.params.id, req.body);
+            const { id } = req.params;
+            const dadosAtualizados = req.body;
+            const usuarioAtualizado = await UsuarioService.atualizarUsuario(id, dadosAtualizados);
             if (!usuarioAtualizado) {
-                return res.status(StatusHttp.NAO_ENCONTRADO).json({ sucesso: false, mensagem: "Usuário não encontrado" });
+                return res.status(404).json({ sucesso: false, mensagem: "Usuário não encontrado" });
             }
-
-            res.status(StatusHttp.SUCESSO).json({ sucesso: true, dados: usuarioAtualizado });
+            res.status(200).json({ sucesso: true, dados: usuarioAtualizado });
+            logger.info(`
+                Usuário ${usuarioAtualizado.nome} ${usuarioAtualizado.sobrenome} atualizado com sucesso.
+                Dados atualizados: ${JSON.stringify(dadosAtualizados)}`);
         } catch (erro) {
-            next(erro);
+            tratarErro(erro, 'Erro ao atualizar usuário', next);
         }
     }
 
     static async excluirUsuario(req: Request, res: Response, next: NextFunction) {
         try {
             await UsuarioService.excluirUsuario(req.params.id);
-            res.status(StatusHttp.SUCESSO).json({ sucesso: true, mensagem: "Usuário excluído com sucesso" });
+            res.status(200).json({ sucesso: true, mensagem: "Usuário excluído com sucesso" });
         } catch (erro) {
-            next(erro);
+            tratarErro(erro, 'Erro ao excluir usuário', next);
+        }
+    }
+
+    static async obterUsuariosPorNome(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { nome } = req.params;
+            const usuarios = await UsuarioService.obterUsuariosPorNome(nome);
+            res.status(200).json({ sucesso: true, dados: usuarios });
+        } catch (erro) {
+            tratarErro(erro, 'Erro ao obter usuários por nome', next);
         }
     }
 }

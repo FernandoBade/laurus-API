@@ -1,15 +1,30 @@
-import express from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import UsuarioController from '../controllers/usuarioController';
-import { validarCorpoDaRequisicao } from '../utils/commons';
-import { usuarioSchema, usuarioUpdateSchema } from '../utils/assets/schemasJoi';
 
-const router = express.Router();
+const router = Router();
 
-router.post('/cadastro', validarCorpoDaRequisicao(usuarioSchema), UsuarioController.cadastrarUsuario);
-router.get('/', UsuarioController.listarUsuarios);
-router.get('/:id', UsuarioController.obterUsuarioPorId);
-router.get('/nome/:nome', UsuarioController.obterUsuariosPorNome);
-router.put('/:id', validarCorpoDaRequisicao(usuarioUpdateSchema), UsuarioController.atualizarUsuario);
-router.delete('/:id', UsuarioController.excluirUsuario);
+router.post('/', (req: Request, res: Response, next: NextFunction) => {
+    UsuarioController.cadastrarUsuario(req, res, next);
+});
+
+router.get('/nome/:nome', (req: Request, res: Response, next: NextFunction) => {
+    UsuarioController.obterUsuariosPorNome(req, res, next);
+});
+
+router.get('/:id', (req: Request, res: Response, next: NextFunction) => {
+    UsuarioController.obterUsuarioPorId(req, res, next);
+});
+
+router.put('/:id', (req: Request, res: Response, next: NextFunction) => {
+    UsuarioController.atualizarUsuario(req, res, next);
+});
+
+router.delete('/:id', (req: Request, res: Response, next: NextFunction) => {
+    UsuarioController.excluirUsuario(req, res, next);
+});
+
+router.get('/', (req: Request, res: Response, next: NextFunction) => {
+    UsuarioController.listarUsuarios(req, res, next);
+});
 
 export default router;

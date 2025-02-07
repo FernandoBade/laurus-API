@@ -3,8 +3,15 @@ generator client {
 }
 
 datasource db {
-    provider = "mysql" // ou "postgresql" dependendo do banco
-    url      = env("DATABASE_URL")
+    provider = "sqlite"
+    url      = "file:./dev.db"
+}
+
+model Log {
+    id             String       @id @default(uuid())
+    nivel          String
+    mensagem       String
+    timestamp      DateTime     @default(now())
 }
 
 model Usuario {
@@ -14,13 +21,13 @@ model Usuario {
     email          String       @unique
     telefone       String?
     senha          String
-    dataNascimento DateTime
+    dataNascimento DateTime?
     ativo          Boolean      @default(true)
-    ultimoAcesso   DateTime     @default(now())
-    aparencia      String
-    idioma         String
-    moeda          String
-    formatoData    String
+    dataCadastro   DateTime     @default(now())
+    aparencia      String?
+    idioma         String?
+    moeda          String?
+    formatoData    String?
     contas         Conta[]
 }
 

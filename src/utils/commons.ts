@@ -1,7 +1,7 @@
 import path from 'path';
-import { Request, Response, NextFunction } from 'express';
 import { createLogger, format, transports, addColors } from 'winston';
-import Joi from 'joi';
+import { NextFunction } from 'express';
+import { LogService } from '../services/logService';
 
 //#region 🔹 Logger
 const logPath = path.join(__dirname, './logs/');
@@ -34,7 +34,7 @@ addColors(customLevels.colors);
 export const logger = createLogger({
     levels: customLevels.levels,
     format: format.combine(
-        format.timestamp({ format: 'DD-MM-YYYY HH:mm:ss' }),
+        format.timestamp({ format: 'YYYY-MM-DDTHH:mm:ssZ' }),
         format.json(),
         format.printf(({ timestamp, level, message }) => `${timestamp} [${level}]: ${message}`)
     ),
@@ -48,58 +48,24 @@ export const logger = createLogger({
         }),
         new (require('winston-daily-rotate-file'))({
             filename: `${logPath}/laurus-%DATE%.log`,
-            datePattern: 'DD-MM-YYYY',
+            datePattern: 'YYYY-MM-DD',
             zippedArchive: true,
             maxSize: '20m',
             maxFiles: '30d',
             level: 'notice',
             format: format.combine(
-                format.timestamp({ format: 'DD-MM-YYYY HH:mm:ss' }),
+                format.timestamp({ format: 'YYYY-MM-DDTHH:mm:ssZ' }),
                 format.printf(({ timestamp, level, message }) => `${timestamp} [${level}]: ${message}`)
             ),
         }),
     ],
 });
 
-export function responderAPI(
-    res: Response,
-    status: number,
-    mensagem: string,
-    dados: any = null
-) {
-    const resposta: any = {
-        sucesso: status >= 200 && status < 300,
-        mensagem
-    };
+export async function tratarErro(erro: unknown, mensagem: string, next: NextFunction) {
+    const mensagemErro = (erro instanceof Error) ? erro.message : 'Erro desconhecido';
+    logger.error(`${mensagem}: ${mensagemErro}`);
 
-    if (dados) {
-        if (Array.isArray(dados)) {
-            resposta.total = dados.length;
-            resposta.resultados = dados;
-        } else if (typeof dados === 'object') {
-            resposta.dados = dados;
-        } else {
-            resposta.detalhes = dados;
-        }
-    }
+    await LogService.registrarLog('error', `${mensagem}: ${mensagemErro}`);
 
-    res.status(status).json(resposta);
+    next(erro);
 }
-
-
-export function validarCorpoDaRequisicao(schema: Joi.Schema, local: 'body' | 'params' | 'query' = 'body') {
-    return (req: Request, res: Response, next: NextFunction) => {
-        const { error, value } = schema.validate(req[local], { abortEarly: false, stripUnknown: true });
-
-        if (error) {
-            return responderAPI(res, 400, "Erro na validação dos dados", {
-                codigo: "VALIDACAO_FALHOU",
-                erros: error.details.map(err => err.message)
-            });
-        }
-
-        req[local] = value;
-        next();
-    };
-}
-

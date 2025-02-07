@@ -22,10 +22,13 @@ export class UsuarioService {
     }
 
     static async obterUsuariosPorNome(nome: string) {
+        const nomeLower = nome.toLowerCase();
         return prisma.usuario.findMany({
             where: {
-                OR: [{ nome: { contains: nome, mode: 'insensitive' } }, { sobrenome: { contains: nome, mode: 'insensitive' } }]
-            },
+                nome: {
+                    contains: nomeLower
+                }
+            }
         });
     }
 
