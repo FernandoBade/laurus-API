@@ -9,7 +9,7 @@ datasource db {
 
 model Log {
     id             String       @id @default(uuid())
-    nivel          String
+    tipo           String
     mensagem       String
     timestamp      DateTime     @default(now())
 }

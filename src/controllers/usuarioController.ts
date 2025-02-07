@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UsuarioService } from '../services/usuarioService';
-import { logger, tratarErro } from '../utils/commons';
+import { registrarLog, tratarErro } from '../utils/commons';
+import { TipoLog } from '../utils/enum';
 
 class UsuarioController {
     static async cadastrarUsuario(req: Request, res: Response, next: NextFunction) {
@@ -18,7 +19,7 @@ class UsuarioController {
 
             const novoUsuario = await UsuarioService.criarUsuario(req.body);
             res.status(201).json({ sucesso: true, dados: novoUsuario });
-            logger.info(`Usuário ${nome} ${sobrenome} cadastrado com sucesso`);
+            await registrarLog(TipoLog.SUCESSO, `Usuário ${nome} ${sobrenome} cadastrado com sucesso`);
         } catch (erro) {
             tratarErro(erro, 'Erro ao cadastrar usuário', next);
         }
@@ -55,9 +56,7 @@ class UsuarioController {
                 return res.status(404).json({ sucesso: false, mensagem: "Usuário não encontrado" });
             }
             res.status(200).json({ sucesso: true, dados: usuarioAtualizado });
-            logger.info(`
-                Usuário ${usuarioAtualizado.nome} ${usuarioAtualizado.sobrenome} atualizado com sucesso.
-                Dados atualizados: ${JSON.stringify(dadosAtualizados)}`);
+            await registrarLog(TipoLog.SUCESSO, `Usuário ${usuarioAtualizado.nome} ${usuarioAtualizado.sobrenome} atualizado com sucesso. Dados atualizados: ${JSON.stringify(dadosAtualizados)}`);
         } catch (erro) {
             tratarErro(erro, 'Erro ao atualizar usuário', next);
         }
