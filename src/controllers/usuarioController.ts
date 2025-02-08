@@ -53,21 +53,21 @@ class UsuarioController {
 
     static async obterUsuariosPorEmail(emailTermo: string, req: Request, res: Response, next: NextFunction) {
         try {
-            const { email } = req.body;
-            const usuarios = await UsuarioService.obterUsuariosPorEmail(email as string);
+            const usuarios = await UsuarioService.obterUsuariosPorEmail(emailTermo);
 
             if (usuarios.length === 0) {
-                return responderAPI(res, HTTPStatus.NOT_FOUND, { mensagem: "Nenhum usuário encontrado." });
+                return responderAPI(res, HTTPStatus.NOT_FOUND, undefined, "Nenhum usuário encontrado com o e-mail fornecido.");
             }
 
-            responderAPI(res, HTTPStatus.OK, usuarios);
+            return responderAPI(res, HTTPStatus.OK, usuarios);
         } catch (erro) {
-            tratarErro('Erro ao obter usuários por e-mail', erro, next);
+            tratarErro('Erro ao buscar usuários', erro instanceof Error ? erro.message : 'Erro desconhecido', next);
         }
     }
 
     static async atualizarUsuario(req: Request, res: Response, next: NextFunction) {
         try {
+
             const dadosAtualizados = req.body;
 
             const parseResult = atualizarUsuarioSchema.safeParse(dadosAtualizados);

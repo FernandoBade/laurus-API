@@ -41,17 +41,12 @@ export class UsuarioService {
         if (emailTermo) {
             where.email = {
                 contains: emailTermo,
-                mode: 'insensitive'
             };
         }
 
         const usuarios = await prisma.usuario.findMany({
             where,
         });
-
-        if (usuarios.length === 0) {
-            throw new Error('Nenhum usuário encontrado com o e-mail fornecido.');
-        }
 
         return usuarios;
     }

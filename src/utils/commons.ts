@@ -68,7 +68,7 @@ export async function registrarLog(tipo: TiposDeLog, mensagem: string) {
 export async function tratarErro(mensagem: string, erro: unknown, next: NextFunction) {
     const mensagemErro = (erro instanceof Error) ? erro.message : 'Erro desconhecido';
     await registrarLog(TiposDeLog.ERRO, `${mensagem}: ${mensagemErro}`);
-    next(erro);
+    next(new Error(mensagemErro));
 }
 
 /**

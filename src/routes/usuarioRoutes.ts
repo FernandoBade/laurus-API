@@ -6,16 +6,7 @@ import { HTTPStatus } from '../utils/enums';
 
 const router = Router();
 
-router.post('/', (req: Request, res: Response, next: NextFunction) => {
-    UsuarioController.cadastrarUsuario(req, res, next);
-});
-
-
-router.get('/:id', (req: Request, res: Response, next: NextFunction) => {
-    UsuarioController.obterUsuarioPorId(req, res, next);
-});
-
-router.get('/usuarios', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/buscar', async (req: Request, res: Response, next: NextFunction) => {
     const emailTermo = req.query.email as string;
     try {
         const usuarios = await UsuarioController.obterUsuariosPorEmail(emailTermo, req, res, next);
@@ -25,6 +16,19 @@ router.get('/usuarios', async (req: Request, res: Response, next: NextFunction) 
     }
 });
 
+router.post('/', (req: Request, res: Response, next: NextFunction) => {
+    UsuarioController.cadastrarUsuario(req, res, next);
+});
+
+router.get('/', (req: Request, res: Response, next: NextFunction) => {
+    UsuarioController.listarUsuarios(req, res, next);
+});
+
+router.get('/:id', (req: Request, res: Response, next: NextFunction) => {
+    UsuarioController.obterUsuarioPorId(req, res, next);
+});
+
+
 router.put('/:id', (req: Request, res: Response, next: NextFunction) => {
     UsuarioController.atualizarUsuario(req, res, next);
 });
@@ -32,10 +36,5 @@ router.put('/:id', (req: Request, res: Response, next: NextFunction) => {
 router.delete('/:id', (req: Request, res: Response, next: NextFunction) => {
     UsuarioController.excluirUsuario(req, res, next);
 });
-
-router.get('/', (req: Request, res: Response, next: NextFunction) => {
-    UsuarioController.listarUsuarios(req, res, next);
-});
-
 
 export default router;
