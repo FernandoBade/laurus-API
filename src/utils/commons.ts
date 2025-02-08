@@ -1,90 +1,111 @@
 import { createLogger, format, transports, addColors } from 'winston';
 import { NextFunction } from 'express';
 import { LogService } from '../services/logService';
-import { TipoLog } from './enum';
+import { HTTPStatus, TiposDeLog } from './enums';
+import { Response } from 'express';
 
 //#region 🔹 Logger
-
-const customLevels = {
+const logsCustomizados = {
     levels: {
-        error: 0,
-        warning: 1,
-        info: 2,
-        notice: 3,
+        [TiposDeLog.ERRO]: 0,
+        [TiposDeLog.ALERTA]: 1,
+        [TiposDeLog.SUCESSO]: 2,
+        [TiposDeLog.INFO]: 3,
+        [TiposDeLog.DEBUG]: 4
     },
+
     colors: {
-        error: 'red',
-        warning: 'yellow',
-        info: 'green',
-        notice: 'grey',
-    },
+        [TiposDeLog.ERRO]: 'red',
+        [TiposDeLog.ALERTA]: 'yellow',
+        [TiposDeLog.SUCESSO]: 'green',
+        [TiposDeLog.INFO]: 'blue',
+        [TiposDeLog.DEBUG]: 'magenta'
+    }
 };
 
-addColors(customLevels.colors);
+addColors(logsCustomizados.colors);
 
-const winstonLogger = createLogger({
-    levels: customLevels.levels,
+const logger = createLogger({
+    levels: logsCustomizados.levels,
     format: format.combine(
-        format.timestamp({ format: 'ISO8601' }),
-        format.json(),
+        format.timestamp(),
+        format.colorize({ all: true }),
         format.printf(({ timestamp, level, message }) => `${timestamp} [${level}]: ${message}`)
     ),
     transports: [
         new transports.Console({
-            level: 'notice',
-            format: format.combine(
-                format.colorize({ all: true }),
-                format.printf(({ timestamp, level, message }) => `${timestamp} [${level}]: ${message}`)
-            )
+            level: TiposDeLog.DEBUG,
         })
-    ],
+    ]
 });
 
-const tipoLogParaNivel: Record<TipoLog, string> = {
-    [TipoLog.ERRO]: 'error',
-    [TipoLog.ALERTA]: 'warning',
-    [TipoLog.SUCESSO]: 'info',
-    [TipoLog.NOTIFICACAO]: 'notice',
-};
-
-const nivelParaTipoLog: Record<string, TipoLog> = {
-    'error': TipoLog.ERRO,
-    'warning': TipoLog.ALERTA,
-    'info': TipoLog.SUCESSO,
-    'notice': TipoLog.NOTIFICACAO,
-};
-
 /**
- * Registra uma mensagem de log com o tipo especificado.
+ * Registra uma mensagem de log.
  *
- * @param tipo - O tipo de log a ser registrado (e.g., TipoLog.ERRO, TipoLog.SUCESSO).
- * @param mensagem - A mensagem de log a ser registrada.
+ * @param tipo - Tipo de log (ERRO, ALERTA, SUCESSO, INFO, DEBUG).
+ * @param mensagem - Mensagem a ser registrada.
  *
- * Este método utiliza o `winstonLogger` para registrar a mensagem no console
- * e também chama o `LogService` para persistir o log de forma assíncrona.
+ * Usa o `logger` para mostrar no console e o `LogService` para salvar. O nível DEBUG não é salvo.
  */
-export async function registrarLog(tipo: TipoLog, mensagem: string) {
-    const nivel = tipoLogParaNivel[tipo];
-    winstonLogger.log(nivel, mensagem);
-    const tipoParaBanco = nivelParaTipoLog[nivel as keyof typeof nivelParaTipoLog];
-    await LogService.registrarLog(tipoParaBanco, mensagem);
-};
 
-/**
- * Trata um erro registrando-o e passando-o para o próximo middleware.
- *
- * @param erro - O erro a ser tratado, que pode ser uma instância de `Error` ou outro tipo desconhecido.
- * @param mensagem - Uma mensagem adicional para contextualizar o erro.
- * @param next - A função `NextFunction` do Express para passar o erro adiante.
- *
- * Este método registra o erro usando `registrarLog` com o tipo `TipoLog.ERRO`
- * e inclui a mensagem de erro original, se disponível. Em seguida, chama `next`
- * para continuar o fluxo de middleware do Express.
- */
-export async function tratarErro(erro: unknown, mensagem: string, next: NextFunction) {
-    const mensagemErro = (erro instanceof Error) ? erro.message : 'Erro desconhecido';
-    await registrarLog(TipoLog.ERRO, `${mensagem}: ${mensagemErro}`);
-    next(erro);
-};
+export async function registrarLog(tipo: TiposDeLog, mensagem: string) {
+    logger.log(tipo, mensagem);
+    await LogService.registrarLog(tipo, mensagem);
+}
 
 // #endregion 🔹 Logger
+
+// #region 🔹 Tratamentos gerais de respostas e erros
+/**
+ * Lida com um erro, registrando no banco e passando adiante.
+ *
+ * @param erro - O erro que ocorreu.
+ * @param mensagem - Mensagem extra para contexto.
+ * @param next - Função do Express para continuar o fluxo.
+ *
+ * Registra o erro com `registrarLog` e chama `next` para seguir o baile.
+ */
+export async function tratarErro(mensagem: string, erro: unknown, next: NextFunction) {
+    const mensagemErro = (erro instanceof Error) ? erro.message : 'Erro desconhecido';
+    await registrarLog(TiposDeLog.ERRO, `${mensagem}: ${mensagemErro}`);
+    next(erro);
+}
+
+/**
+ * Responde a uma requisição com uma estrutura padrão.
+ *
+ * @param res - O objeto de resposta do Express.
+ * @param status - O código de status HTTP.
+ * @param dados - Os dados a serem retornados (opcional).
+ * @param mensagem - A mensagem a ser retornada (opcional).
+ */
+export function responderAPI(res: Response, status: HTTPStatus, dados?: any, mensagem?: string) {
+    const response = {
+        sucesso: status === HTTPStatus.OK || status === HTTPStatus.CREATED,
+        mensagem:
+            mensagem || (status === HTTPStatus.OK || status === HTTPStatus.CREATED ?
+                'Requisição realizada com sucesso.' :
+                'Ocorreu um erro na requisição'),
+        dados: dados || null,
+    };
+
+    return res.status(status).json(response);
+}
+
+// #endregion 🔹 Tratamentos gerais de respostas e erros
+
+//# region 🔹 Conversores
+/**
+ * Converte uma data do formato ISO8601 ou tipo Date para DD/MM/AAAA.
+ *
+ * @param data - A data no formato ISO8601 ou objeto Date.
+ * @returns A data no formato DD/MM/AAAA.
+ */
+export function converterDataISOparaDDMMAAAA(data: string | Date): string {
+    const date = typeof data === 'string' ? new Date(data) : data;
+    const dia = String(date.getUTCDate()).padStart(2, '0');
+    const mes = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const ano = date.getUTCFullYear();
+    return `${dia}/${mes}/${ano}`;
+}
+// #endregion 🔹 Conversores

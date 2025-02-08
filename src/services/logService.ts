@@ -1,15 +1,17 @@
 import { PrismaClient } from '@prisma/client';
-import { TipoLog } from '../utils/enum';
+import { TiposDeLog } from '../utils/enums';
 
 const prisma = new PrismaClient();
 
 export class LogService {
-    static async registrarLog(tipo: TipoLog, mensagem: string) {
-        await prisma.log.create({
-            data: {
-                tipo: tipo,
-                mensagem,
-            },
-        });
+    static async registrarLog(tipo: TiposDeLog, mensagem: string) {
+        if (tipo !== TiposDeLog.DEBUG) {
+            await prisma.log.create({
+                data: {
+                    tipo: tipo,
+                    mensagem,
+                },
+            });
+        }
     }
 }

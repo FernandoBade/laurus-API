@@ -1,16 +1,30 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { criarUsuarioSchema } from '../utils/validator';
 
 const prisma = new PrismaClient();
-
 export class UsuarioService {
-    static async criarUsuario(dados: any) {
-        dados.email = dados.email.trim().toLowerCase();
-        const senhaHash = await bcrypt.hash(dados.senha, 10);
+    static async cadastrarUsuario(dados: any) {
+        try {
+            dados.email = dados.email.trim().toLowerCase();
+            const usuarioExistente = await prisma.usuario.findUnique({
+                where: { email: dados.email },
+            });
 
-        return prisma.usuario.create({
-            data: { ...dados, senha: senhaHash },
-        });
+            if (usuarioExistente) {
+                throw new Error('O e-mail já está em uso. Por favor, escolha outro.');
+            }
+
+            const senhaCrypto = await bcrypt.hash(dados.senha, 10);
+            return await prisma.usuario.create({
+                data: {
+                    ...dados,
+                    senha: senhaCrypto,
+                },
+            });
+        } catch (erro) {
+            throw new Error('Erro ao criar usuário. Verifique os dados fornecidos.');
+        }
     }
 
     static async listarUsuarios() {
@@ -21,31 +35,39 @@ export class UsuarioService {
         return prisma.usuario.findUnique({ where: { id } });
     }
 
-    static async obterUsuariosPorNome(nome: string) {
-        const nomeLower = nome.toLowerCase();
-        return prisma.usuario.findMany({
-            where: {
-                nome: {
-                    contains: nomeLower
-                }
-            }
+    static async obterUsuariosPorEmail(emailTermo?: string) {
+        const where: any = {};
+
+        if (emailTermo) {
+            where.email = {
+                contains: emailTermo,
+                mode: 'insensitive'
+            };
+        }
+
+        const usuarios = await prisma.usuario.findMany({
+            where,
         });
+
+        if (usuarios.length === 0) {
+            throw new Error('Nenhum usuário encontrado com o e-mail fornecido.');
+        }
+
+        return usuarios;
     }
 
-    static async obterUsuarioPorEmail(email: string) {
-        return prisma.usuario.findUnique({ where: { email } });
-    }
-
-    static async atualizarUsuario(id: string, dados: any) {
-        if (dados.senha) dados.senha = await bcrypt.hash(dados.senha, 10);
-
+    static async atualizarUsuario(id: string, dadosParaAtualizar: any) {
         return prisma.usuario.update({
             where: { id },
-            data: dados,
+            data: {
+                ...dadosParaAtualizar,
+            },
         });
     }
 
     static async excluirUsuario(id: string) {
         return prisma.usuario.delete({ where: { id } });
     }
+
+
 }

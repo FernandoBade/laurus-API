@@ -1,36 +1,39 @@
 import { Request, Response, NextFunction } from 'express';
 import { UsuarioService } from '../services/usuarioService';
-import { registrarLog, tratarErro } from '../utils/commons';
-import { TipoLog } from '../utils/enum';
+import { registrarLog, tratarErro, responderAPI } from '../utils/commons';
+import { HTTPStatus, TiposDeLog } from '../utils/enums';
+import { criarUsuarioSchema, atualizarUsuarioSchema } from '../utils/validator';
 
 class UsuarioController {
     static async cadastrarUsuario(req: Request, res: Response, next: NextFunction) {
         try {
-            const {
-                email,
-                nome,
-                sobrenome,
-                senha,
-                dataNascimento: dataCadastro } = req.body;
+            const dadosUsuario = req.body;
+            const parseResult = criarUsuarioSchema.safeParse(dadosUsuario);
 
-            if (!email || !nome || !sobrenome || !senha || !dataCadastro) {
-                return res.status(400).json({ sucesso: false, mensagem: "Todos os campos são obrigatórios" });
+            if (!parseResult.success) {
+                const mensagensDeErro = parseResult.error.errors.map(err => err.message.replace(/"/g, "'"));
+                return responderAPI(res, HTTPStatus.BAD_REQUEST, { erros: mensagensDeErro });
             }
 
-            const novoUsuario = await UsuarioService.criarUsuario(req.body);
-            res.status(201).json({ sucesso: true, dados: novoUsuario });
-            await registrarLog(TipoLog.SUCESSO, `Usuário ${nome} ${sobrenome} cadastrado com sucesso`);
+            const novoUsuario = await UsuarioService.cadastrarUsuario(parseResult.data);
+            responderAPI(res, HTTPStatus.CREATED, novoUsuario);
+            await registrarLog(TiposDeLog.SUCESSO, `Usuário cadastrado: ${JSON.stringify(parseResult.data)}`);
         } catch (erro) {
-            tratarErro(erro, 'Erro ao cadastrar usuário', next);
+            if (erro instanceof Error && erro.message.includes('O e-mail já está em uso')) {
+                return responderAPI(res, HTTPStatus.BAD_REQUEST, undefined, erro.message);
+            }
+
+            tratarErro('Erro ao cadastrar usuário', erro, next);
         }
     }
 
     static async listarUsuarios(req: Request, res: Response, next: NextFunction) {
         try {
             const usuarios = await UsuarioService.listarUsuarios();
-            res.status(200).json({ sucesso: true, dados: usuarios });
+            responderAPI(res, HTTPStatus.OK, usuarios);
+
         } catch (erro) {
-            tratarErro(erro, 'Erro ao listar usuários', next);
+            tratarErro('Erro ao listar usuários', erro, next);
         }
     }
 
@@ -39,47 +42,66 @@ class UsuarioController {
             const { id } = req.params;
             const usuario = await UsuarioService.obterUsuarioPorId(id);
             if (!usuario) {
-                return res.status(404).json({ sucesso: false, mensagem: "Usuário não encontrado" });
+                return responderAPI(res, HTTPStatus.NOT_FOUND, undefined, "Usuário não encontrado");
             }
-            res.status(200).json({ sucesso: true, dados: usuario });
+            responderAPI(res, HTTPStatus.OK, usuario);
+
         } catch (erro) {
-            tratarErro(erro, 'Erro ao obter usuário por ID', next);
+            tratarErro('Erro ao obter usuário por ID', erro, next);
+        }
+    }
+
+    static async obterUsuariosPorEmail(emailTermo: string, req: Request, res: Response, next: NextFunction) {
+        try {
+            const { email } = req.body;
+            const usuarios = await UsuarioService.obterUsuariosPorEmail(email as string);
+
+            if (usuarios.length === 0) {
+                return responderAPI(res, HTTPStatus.NOT_FOUND, { mensagem: "Nenhum usuário encontrado." });
+            }
+
+            responderAPI(res, HTTPStatus.OK, usuarios);
+        } catch (erro) {
+            tratarErro('Erro ao obter usuários por e-mail', erro, next);
         }
     }
 
     static async atualizarUsuario(req: Request, res: Response, next: NextFunction) {
         try {
-            const { id } = req.params;
             const dadosAtualizados = req.body;
-            const usuarioAtualizado = await UsuarioService.atualizarUsuario(id, dadosAtualizados);
-            if (!usuarioAtualizado) {
-                return res.status(404).json({ sucesso: false, mensagem: "Usuário não encontrado" });
+
+            const parseResult = atualizarUsuarioSchema.safeParse(dadosAtualizados);
+            if (!parseResult.success) {
+                const mensagensDeErro = parseResult.error.errors.map(err => err.message.replace(/"/g, "'"));
+                return responderAPI(res, HTTPStatus.BAD_REQUEST, { erros: mensagensDeErro });
             }
-            res.status(200).json({ sucesso: true, dados: usuarioAtualizado });
-            await registrarLog(TipoLog.SUCESSO, `Usuário ${usuarioAtualizado.nome} ${usuarioAtualizado.sobrenome} atualizado com sucesso. Dados atualizados: ${JSON.stringify(dadosAtualizados)}`);
+
+            const { id, ...dadosParaAtualizar } = parseResult.data;
+            const usuarioAtualizado = await UsuarioService.atualizarUsuario(id, dadosParaAtualizar);
+
+            if (!usuarioAtualizado) {
+                return responderAPI(res, HTTPStatus.NOT_FOUND, { mensagem: "Usuário não encontrado." });
+            }
+
+            responderAPI(res, HTTPStatus.OK, usuarioAtualizado);
+            await registrarLog(TiposDeLog.INFO, `Usuário atualizado: ${JSON.stringify(dadosAtualizados)}`);
+
         } catch (erro) {
-            tratarErro(erro, 'Erro ao atualizar usuário', next);
+            tratarErro('Erro ao atualizar usuário', erro, next);
         }
     }
 
     static async excluirUsuario(req: Request, res: Response, next: NextFunction) {
         try {
             await UsuarioService.excluirUsuario(req.params.id);
-            res.status(200).json({ sucesso: true, mensagem: "Usuário excluído com sucesso" });
+            responderAPI(res, HTTPStatus.OK, undefined, "Usuário excluído com sucesso");
+            await registrarLog(TiposDeLog.INFO, `Usuário excluído: ${req.params.id}`);
+
         } catch (erro) {
-            tratarErro(erro, 'Erro ao excluir usuário', next);
+            tratarErro('Erro ao excluir usuário', erro, next);
         }
     }
 
-    static async obterUsuariosPorNome(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { nome } = req.params;
-            const usuarios = await UsuarioService.obterUsuariosPorNome(nome);
-            res.status(200).json({ sucesso: true, dados: usuarios });
-        } catch (erro) {
-            tratarErro(erro, 'Erro ao obter usuários por nome', next);
-        }
-    }
 }
 
 export default UsuarioController;
