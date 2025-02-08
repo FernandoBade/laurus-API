@@ -80,32 +80,27 @@ export async function tratarErro(mensagem: string, erro: unknown, next: NextFunc
  * @param mensagem - A mensagem a ser retornada (opcional).
  */
 export function responderAPI(res: Response, status: HTTPStatus, dados?: any, mensagem?: string) {
-    const response = {
+    let response: any = {
         sucesso: status === HTTPStatus.OK || status === HTTPStatus.CREATED,
-        mensagem:
-            mensagem || (status === HTTPStatus.OK || status === HTTPStatus.CREATED ?
-                'Requisição realizada com sucesso.' :
-                'Ocorreu um erro na requisição'),
-        dados: dados || null,
+        mensagem: mensagem || (status === HTTPStatus.OK || status === HTTPStatus.CREATED
+            ? 'Requisição realizada com sucesso.'
+            : 'Ocorreu um erro na requisição'),
+        dados: dados ?? null, 
     };
 
-    return res.status(status).json(response);
+    try {
+        console.log('🔹 Dados a serem enviados na resposta:', response.dados);
+        response.dados = JSON.parse(JSON.stringify(response.dados));
+    } catch (error) {
+        console.error('❌ Erro ao serializar dados para resposta:', error);
+        response.dados = null;
+    }
+
+    if (!res.headersSent) {
+        return res.status(status).json(response);
+    } else {
+        console.warn("⚠️ Tentativa de enviar uma resposta depois dos headers já enviados.");
+    }
 }
 
 // #endregion 🔹 Tratamentos gerais de respostas e erros
-
-//# region 🔹 Conversores
-/**
- * Converte uma data do formato ISO8601 ou tipo Date para DD/MM/AAAA.
- *
- * @param data - A data no formato ISO8601 ou objeto Date.
- * @returns A data no formato DD/MM/AAAA.
- */
-export function converterDataISOparaDDMMAAAA(data: string | Date): string {
-    const date = typeof data === 'string' ? new Date(data) : data;
-    const dia = String(date.getUTCDate()).padStart(2, '0');
-    const mes = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const ano = date.getUTCFullYear();
-    return `${dia}/${mes}/${ano}`;
-}
-// #endregion 🔹 Conversores

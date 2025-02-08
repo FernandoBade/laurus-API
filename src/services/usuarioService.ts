@@ -36,20 +36,14 @@ export class UsuarioService {
     }
 
     static async obterUsuariosPorEmail(emailTermo?: string) {
-        const where: any = {};
+        const where: any = {
+            email: { contains: emailTermo },
+        };
 
-        if (emailTermo) {
-            where.email = {
-                contains: emailTermo,
-            };
-        }
-
-        const usuarios = await prisma.usuario.findMany({
-            where,
-        });
-
-        return usuarios;
+        const usuarios = await prisma.usuario.findMany({ where });
+        return usuarios ?? [];
     }
+
 
     static async atualizarUsuario(id: string, dadosParaAtualizar: any) {
         return prisma.usuario.update({

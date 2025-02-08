@@ -52,18 +52,24 @@ class UsuarioController {
     }
 
     static async obterUsuariosPorEmail(emailTermo: string, req: Request, res: Response, next: NextFunction) {
+        console.log(`Buscando usuários com o e-mail: ${emailTermo}`);
         try {
+            if (!emailTermo || emailTermo.length < 3) {
+                return responderAPI(res, HTTPStatus.BAD_REQUEST, [], "O termo de busca deve ter pelo menos 3 caracteres.");
+            }
+
             const usuarios = await UsuarioService.obterUsuariosPorEmail(emailTermo);
 
             if (usuarios.length === 0) {
-                return responderAPI(res, HTTPStatus.NOT_FOUND, undefined, "Nenhum usuário encontrado com o e-mail fornecido.");
+                return responderAPI(res, HTTPStatus.NOT_FOUND, [], "Nenhum usuário encontrado.");
             }
-
             return responderAPI(res, HTTPStatus.OK, usuarios);
+
         } catch (erro) {
-            tratarErro('Erro ao buscar usuários', erro instanceof Error ? erro.message : 'Erro desconhecido', next);
+            tratarErro('Erro ao buscar usuários', erro, next);
         }
     }
+
 
     static async atualizarUsuario(req: Request, res: Response, next: NextFunction) {
         try {

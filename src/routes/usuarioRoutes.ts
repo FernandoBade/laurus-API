@@ -7,14 +7,13 @@ import { HTTPStatus } from '../utils/enums';
 const router = Router();
 
 router.get('/buscar', async (req: Request, res: Response, next: NextFunction) => {
-    const emailTermo = req.query.email as string;
     try {
-        const usuarios = await UsuarioController.obterUsuariosPorEmail(emailTermo, req, res, next);
-        responderAPI(res, HTTPStatus.OK, usuarios);
+        await UsuarioController.obterUsuariosPorEmail(req.query.email as string, req, res, next);
     } catch (erro) {
         await tratarErro('Erro ao buscar usuários', erro, next);
     }
 });
+
 
 router.post('/', (req: Request, res: Response, next: NextFunction) => {
     UsuarioController.cadastrarUsuario(req, res, next);
