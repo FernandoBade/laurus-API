@@ -15,14 +15,16 @@ class UsuarioController {
                 return responderAPI(res, HTTPStatus.BAD_REQUEST, { erros: mensagensDeErro });
             }
 
-            const novoUsuario = await UsuarioService.cadastrarUsuario(parseResult.data);
-            responderAPI(res, HTTPStatus.CREATED, novoUsuario);
-            await registrarLog(TiposDeLog.SUCESSO, `Usuário cadastrado: ${JSON.stringify(parseResult.data)}`);
-        } catch (erro) {
-            if (erro instanceof Error && erro.message.includes('O e-mail já está em uso')) {
-                return responderAPI(res, HTTPStatus.BAD_REQUEST, undefined, erro.message);
+            const resultado = await UsuarioService.cadastrarUsuario(parseResult.data);
+
+            if (resultado && 'erro' in resultado) {
+                return responderAPI(res, HTTPStatus.BAD_REQUEST, resultado.dados.email, resultado.erro);
             }
 
+            responderAPI(res, HTTPStatus.CREATED, resultado);
+            await registrarLog(TiposDeLog.SUCESSO, `Usuário cadastrado: ${JSON.stringify(parseResult.data)}`);
+
+        } catch (erro) {
             tratarErro('Erro ao cadastrar usuário', erro, next);
         }
     }
@@ -52,16 +54,15 @@ class UsuarioController {
     }
 
     static async obterUsuariosPorEmail(emailTermo: string, req: Request, res: Response, next: NextFunction) {
-        console.log(`Buscando usuários com o e-mail: ${emailTermo}`);
         try {
             if (!emailTermo || emailTermo.length < 3) {
-                return responderAPI(res, HTTPStatus.BAD_REQUEST, [], "O termo de busca deve ter pelo menos 3 caracteres.");
+                return responderAPI(res, HTTPStatus.BAD_REQUEST, [], "O termo de busca deve ter pelo menos 3 caracteres");
             }
 
             const usuarios = await UsuarioService.obterUsuariosPorEmail(emailTermo);
 
             if (usuarios.length === 0) {
-                return responderAPI(res, HTTPStatus.NOT_FOUND, [], "Nenhum usuário encontrado.");
+                return responderAPI(res, HTTPStatus.NOT_FOUND, [], "Nenhum usuário encontrado");
             }
             return responderAPI(res, HTTPStatus.OK, usuarios);
 
@@ -73,7 +74,6 @@ class UsuarioController {
 
     static async atualizarUsuario(req: Request, res: Response, next: NextFunction) {
         try {
-
             const dadosAtualizados = req.body;
 
             const parseResult = atualizarUsuarioSchema.safeParse(dadosAtualizados);
@@ -86,7 +86,7 @@ class UsuarioController {
             const usuarioAtualizado = await UsuarioService.atualizarUsuario(id, dadosParaAtualizar);
 
             if (!usuarioAtualizado) {
-                return responderAPI(res, HTTPStatus.NOT_FOUND, { mensagem: "Usuário não encontrado." });
+                return responderAPI(res, HTTPStatus.NOT_FOUND, { mensagem: "Usuário não encontrado" });
             }
 
             responderAPI(res, HTTPStatus.OK, usuarioAtualizado);
@@ -99,7 +99,12 @@ class UsuarioController {
 
     static async excluirUsuario(req: Request, res: Response, next: NextFunction) {
         try {
-            await UsuarioService.excluirUsuario(req.params.id);
+            const resultado = await UsuarioService.excluirUsuario(req.params.id);
+
+            if (resultado && 'erro' in resultado) {
+                return responderAPI(res, HTTPStatus.NOT_FOUND, resultado, "Erro ao excluir usuário");
+            }
+
             responderAPI(res, HTTPStatus.OK, undefined, "Usuário excluído com sucesso");
             await registrarLog(TiposDeLog.INFO, `Usuário excluído: ${req.params.id}`);
 

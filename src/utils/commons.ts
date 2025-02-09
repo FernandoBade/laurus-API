@@ -85,21 +85,17 @@ export function responderAPI(res: Response, status: HTTPStatus, dados?: any, men
         mensagem: mensagem || (status === HTTPStatus.OK || status === HTTPStatus.CREATED
             ? 'Requisição realizada com sucesso.'
             : 'Ocorreu um erro na requisição'),
-        dados: dados ?? null, 
+        dados: dados ?? null,
     };
 
     try {
-        console.log('🔹 Dados a serem enviados na resposta:', response.dados);
         response.dados = JSON.parse(JSON.stringify(response.dados));
-    } catch (error) {
-        console.error('❌ Erro ao serializar dados para resposta:', error);
+    } catch (erro) {
         response.dados = null;
     }
 
     if (!res.headersSent) {
         return res.status(status).json(response);
-    } else {
-        console.warn("⚠️ Tentativa de enviar uma resposta depois dos headers já enviados.");
     }
 }
 

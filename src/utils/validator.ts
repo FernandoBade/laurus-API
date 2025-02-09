@@ -23,7 +23,7 @@ export const criarUsuarioSchema = z.object({
     idioma: z.enum([Idioma.PT_BR, Idioma.EN_US, Idioma.ES_ES], { message: 'O idioma deve ser "pt-BR", "en-US" ou "es-ES".' }),
     moeda: z.enum([Moeda.BRL, Moeda.USD, Moeda.EUR, Moeda.ARS], { message: 'A moeda deve ser "BRL", "USD", "EUR" ou "ARS".' }),
     formatoData: z.enum([FormatoData.DD_MM_AAAA, FormatoData.MM_DD_YYYY], { message: 'O formato de data deve ser "DD/MM/AAAA" ou "MM/DD/YYYY".' }),
-});
+}).strict();
 
 export const atualizarUsuarioSchema = z.object({
     id: z.string().uuid({ message: 'O ID deve ser um UUID válido.' }),
@@ -39,4 +39,4 @@ export const atualizarUsuarioSchema = z.object({
     idioma: z.enum([Idioma.PT_BR, Idioma.EN_US, Idioma.ES_ES], { message: 'O idioma deve ser "pt-BR", "en-US" ou "es-ES".' }).optional(),
     moeda: z.enum([Moeda.BRL, Moeda.USD, Moeda.EUR, Moeda.ARS], { message: 'A moeda deve ser "BRL", "USD", "EUR" ou "ARS".' }).optional(),
     formatoData: z.enum([FormatoData.DD_MM_AAAA, FormatoData.MM_DD_YYYY], { message: 'O formato de data deve ser "DD/MM/AAAA" ou "MM/DD/YYYY".' }).optional(),
-});
+}).strict();

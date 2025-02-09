@@ -27,7 +27,6 @@ router.get('/:id', (req: Request, res: Response, next: NextFunction) => {
     UsuarioController.obterUsuarioPorId(req, res, next);
 });
 
-
 router.put('/:id', (req: Request, res: Response, next: NextFunction) => {
     UsuarioController.atualizarUsuario(req, res, next);
 });

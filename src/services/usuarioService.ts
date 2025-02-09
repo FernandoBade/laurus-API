@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { criarUsuarioSchema } from '../utils/validator';
 
 const prisma = new PrismaClient();
 export class UsuarioService {
@@ -12,20 +11,23 @@ export class UsuarioService {
             });
 
             if (usuarioExistente) {
-                throw new Error('O e-mail já está em uso. Por favor, escolha outro.');
+                return { erro: "O e-mail já está em uso", dados: dados };
             }
 
             const senhaCrypto = await bcrypt.hash(dados.senha, 10);
-            return await prisma.usuario.create({
+            const novoUsuario = await prisma.usuario.create({
                 data: {
                     ...dados,
                     senha: senhaCrypto,
                 },
             });
+
+            return novoUsuario;
         } catch (erro) {
-            throw new Error('Erro ao criar usuário. Verifique os dados fornecidos.');
+            return { erro: "Erro ao criar usuário" };
         }
     }
+
 
     static async listarUsuarios() {
         return prisma.usuario.findMany();
@@ -55,8 +57,20 @@ export class UsuarioService {
     }
 
     static async excluirUsuario(id: string) {
-        return prisma.usuario.delete({ where: { id } });
+        const usuarioExistente = await prisma.usuario.findUnique({
+            where: { id },
+        });
+
+        if (!usuarioExistente) {
+            return { erro: "Usuário não encontrado" };
+        }
+
+        await prisma.usuario.delete({
+            where: { id },
+        });
+
     }
+
 
 
 }
