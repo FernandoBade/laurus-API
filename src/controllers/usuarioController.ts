@@ -18,7 +18,11 @@ class UsuarioController {
             const resultado = await UsuarioService.cadastrarUsuario(parseResult.data);
 
             if (resultado && 'erro' in resultado) {
-                return responderAPI(res, HTTPStatus.BAD_REQUEST, resultado.dados.email, resultado.erro);
+                return responderAPI(
+                    res,
+                    HTTPStatus.BAD_REQUEST,
+                    resultado.dados.email ?? undefined,
+                    resultado.erro ?? undefined);
             }
 
             responderAPI(res, HTTPStatus.CREATED, resultado);
@@ -43,8 +47,9 @@ class UsuarioController {
         try {
             const { id } = req.params;
             const usuario = await UsuarioService.obterUsuarioPorId(id);
+
             if (!usuario) {
-                return responderAPI(res, HTTPStatus.NOT_FOUND, undefined, "Usuário não encontrado");
+                return responderAPI(res, HTTPStatus.BAD_REQUEST, id ?? undefined, "Usuário não encontrado");
             }
             responderAPI(res, HTTPStatus.OK, usuario);
 
@@ -61,16 +66,16 @@ class UsuarioController {
 
             const usuarios = await UsuarioService.obterUsuariosPorEmail(emailTermo);
 
-            if (usuarios.length === 0) {
-                return responderAPI(res, HTTPStatus.NOT_FOUND, [], "Nenhum usuário encontrado");
+            if (!usuarios.total) {
+                return responderAPI(res, HTTPStatus.BAD_REQUEST, [], "Nenhum usuário encontrado");
             }
             return responderAPI(res, HTTPStatus.OK, usuarios);
+
 
         } catch (erro) {
             tratarErro('Erro ao buscar usuários', erro, next);
         }
     }
-
 
     static async atualizarUsuario(req: Request, res: Response, next: NextFunction) {
         try {
@@ -86,7 +91,7 @@ class UsuarioController {
             const usuarioAtualizado = await UsuarioService.atualizarUsuario(id, dadosParaAtualizar);
 
             if (!usuarioAtualizado) {
-                return responderAPI(res, HTTPStatus.NOT_FOUND, { mensagem: "Usuário não encontrado" });
+                return responderAPI(res, HTTPStatus.BAD_REQUEST, { mensagem: "Usuário não encontrado" });
             }
 
             responderAPI(res, HTTPStatus.OK, usuarioAtualizado);
@@ -102,17 +107,16 @@ class UsuarioController {
             const resultado = await UsuarioService.excluirUsuario(req.params.id);
 
             if (resultado && 'erro' in resultado) {
-                return responderAPI(res, HTTPStatus.NOT_FOUND, resultado, "Erro ao excluir usuário");
+                return responderAPI(res, HTTPStatus.BAD_REQUEST, resultado, "Erro ao excluir usuário");
             }
 
-            responderAPI(res, HTTPStatus.OK, undefined, "Usuário excluído com sucesso");
-            await registrarLog(TiposDeLog.INFO, `Usuário excluído: ${req.params.id}`);
+            responderAPI(res, HTTPStatus.OK, resultado ?? undefined, "Usuário excluído com sucesso");
+            await registrarLog(TiposDeLog.INFO, `Usuário excluído: ${resultado.id}`);
 
         } catch (erro) {
             tratarErro('Erro ao excluir usuário', erro, next);
         }
     }
-
 }
 
 export default UsuarioController;

@@ -28,49 +28,78 @@ export class UsuarioService {
         }
     }
 
-
     static async listarUsuarios() {
-        return prisma.usuario.findMany();
+        try {
+            return prisma.usuario.findMany();
+        } catch (erro) {
+            return { erro: "Erro ao listar usuários" };
+        }
     }
 
     static async obterUsuarioPorId(id: string) {
-        return prisma.usuario.findUnique({ where: { id } });
+        try {
+            return prisma.usuario.findUnique({ where: { id } });
+        } catch (erro) {
+            return { erro: "Erro ao obter usuário por ID" };
+        }
     }
 
     static async obterUsuariosPorEmail(emailTermo?: string) {
-        const where: any = {
-            email: { contains: emailTermo },
-        };
+        try {
+            const where: any = {
+                email: { contains: emailTermo },
+            };
 
-        const usuarios = await prisma.usuario.findMany({ where });
-        return usuarios ?? [];
+            const usuarios = await prisma.usuario.findMany({ where });
+            return { total: usuarios?.length ?? null, usuarios: usuarios ?? [] };
+
+        } catch (erro) {
+            return { erro: "Erro ao obter usuários por e-mail" };
+        }
     }
 
-
     static async atualizarUsuario(id: string, dadosParaAtualizar: any) {
-        return prisma.usuario.update({
-            where: { id },
-            data: {
-                ...dadosParaAtualizar,
-            },
-        });
+        try {
+            const usuarioExistente = await prisma.usuario.findUnique({
+                where: { id },
+            });
+
+            if (!usuarioExistente) {
+                return { erro: "Usuário não encontrado" };
+            }
+
+            const usuarioAtualizado = await prisma.usuario.update({
+                where: { id },
+                data: {
+                    ...dadosParaAtualizar,
+                },
+            });
+
+            return usuarioAtualizado;
+
+        } catch (erro) {
+            return { erro: "Erro ao atualizar usuário" };
+        }
     }
 
     static async excluirUsuario(id: string) {
-        const usuarioExistente = await prisma.usuario.findUnique({
-            where: { id },
-        });
+        try {
+            const usuarioExistente = await prisma.usuario.findUnique({
+                where: { id },
+            });
 
-        if (!usuarioExistente) {
-            return { erro: "Usuário não encontrado" };
+            if (!usuarioExistente) {
+                return { erro: "Usuário não encontrado" };
+            }
+            const usuarioExcluidoId = usuarioExistente.id;
+            const usuarioExcluido = await prisma.usuario.delete({
+                where: { id },
+            });
+
+            return { id: usuarioExcluidoId };
+
+        } catch (erro) {
+            return { erro: "Erro ao excluir usuário" };
         }
-
-        await prisma.usuario.delete({
-            where: { id },
-        });
-
     }
-
-
-
 }
