@@ -1,16 +1,18 @@
 import { PrismaClient } from '@prisma/client';
-import { TiposDeLog } from '../utils/enums';
+import { TiposDeLog, Operacoes } from '../utils/enums';
 import { registrarLog } from '../utils/commons';
 
 const prisma = new PrismaClient();
 
 export class LogService {
-    static async registrarLog(tipo: TiposDeLog, mensagem: string) {
+    static async registrarLog(tipo: TiposDeLog, operacao: Operacoes, detalhe: string, usuarioId?: string) {
         if (tipo !== TiposDeLog.DEBUG) {
             await prisma.log.create({
                 data: {
                     tipo: tipo,
-                    mensagem,
+                    operacao,
+                    detalhe,
+                    usuarioId,
                 },
             });
         }
@@ -28,7 +30,22 @@ export class LogService {
             },
         });
 
-        registrarLog(TiposDeLog.INFO, `Total de logs deletados: ${resultado.count}`);
+        registrarLog(
+            TiposDeLog.INFO,
+            Operacoes.EXCLUSAO,
+            `Total de logs deletados: ${resultado.count}`
+        );
         return resultado.count;
+    }
+
+    static async buscarLogsPorUsuario(usuarioId: string) {
+        return await prisma.log.findMany({
+            where: {
+                usuarioId: usuarioId,
+            },
+            orderBy: {
+                timestamp: 'desc',
+            },
+        });
     }
 }

@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 export class UsuarioService {
-    static async cadastrarUsuario(dados: any) {
+    static async criarUsuario(dados: any) {
         try {
             dados.email = dados.email.trim().toLowerCase();
             const usuarioExistente = await prisma.usuario.findUnique({

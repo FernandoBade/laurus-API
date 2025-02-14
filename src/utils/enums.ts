@@ -36,3 +36,12 @@ export enum FormatoData {
     DD_MM_AAAA = 'DD/MM/AAAA',
     MM_DD_YYYY = 'MM/DD/YYYY',
 }
+
+export enum Operacoes {
+    CRIACAO = 'criacao',
+    BUSCA = 'busca',
+    ATUALIZACAO = 'atualizacao',
+    LOGIN = 'login',
+    LOGOUT = 'logout',
+    EXCLUSAO = 'exclusao'
+}

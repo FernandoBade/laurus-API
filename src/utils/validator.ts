@@ -26,7 +26,6 @@ export const criarUsuarioSchema = z.object({
 }).strict();
 
 export const atualizarUsuarioSchema = z.object({
-    id: z.string().uuid({ message: 'O ID deve ser um UUID válido' }),
     nome: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres' }).optional(),
     sobrenome: z.string().min(2, { message: 'O sobrenome deve ter pelo menos 2 caracteres' }).optional(),
     email: z.string().toLowerCase().trim().email({ message: 'O e-mail deve ser um endereço de e-mail válido' }).optional(),

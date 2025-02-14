@@ -1,54 +1,90 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { TiposDeLog, Operacoes } from '../utils/enums';
+import { registrarLog } from '../utils/commons';
 import UsuarioController from '../controllers/usuarioController';
-import { tratarErro } from '../utils/commons';
-
 const router = Router();
 
 router.get('/buscar', async (req: Request, res: Response, next: NextFunction) => {
     try {
         await UsuarioController.obterUsuariosPorEmail(req.query.email as string, req, res, next);
     } catch (erro) {
-        await tratarErro('Erro ao buscar usuários', erro, next);
+        await registrarLog(
+            TiposDeLog.DEBUG,
+            Operacoes.BUSCA,
+            JSON.stringify(erro),
+            undefined,
+            next
+        );
     }
 });
 
-router.post('/', (req: Request, res: Response, next: NextFunction) => {
+router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
-        UsuarioController.cadastrarUsuario(req, res, next);
+        UsuarioController.criarUsuario(req, res, next);
     } catch (erro) {
-        tratarErro('Erro ao cadastrar usuário', erro, next);
+        await registrarLog(
+            TiposDeLog.DEBUG,
+            Operacoes.CRIACAO,
+            JSON.stringify(erro),
+            req.body?.usuarioId,
+            next
+        );
     }
 });
 
-router.get('/', (req: Request, res: Response, next: NextFunction) => {
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
         UsuarioController.listarUsuarios(req, res, next);
     } catch (erro) {
-        tratarErro('Erro ao listar usuários', erro, next);
+        await registrarLog(
+            TiposDeLog.DEBUG,
+            Operacoes.BUSCA,
+            JSON.stringify(erro),
+            undefined,
+            next
+        );
     }
 });
 
-router.get('/:id', (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     try {
         UsuarioController.obterUsuarioPorId(req, res, next);
     } catch (erro) {
-        tratarErro('Erro ao obter usuário por ID', erro, next);
+        await registrarLog(
+            TiposDeLog.DEBUG,
+            Operacoes.BUSCA,
+            JSON.stringify(erro),
+            req.params.id ?? undefined,
+            next
+        );
     }
 });
 
-router.put('/:id', (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
     try {
         UsuarioController.atualizarUsuario(req, res, next);
     } catch (erro) {
-        tratarErro('Erro ao atualizar usuário', erro, next);
+        await registrarLog(
+            TiposDeLog.DEBUG,
+            Operacoes.ATUALIZACAO,
+            JSON.stringify(erro),
+            req.params.id ?? undefined,
+            next
+        );
     }
 });
 
-router.delete('/:id', (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
     try {
         UsuarioController.excluirUsuario(req, res, next);
     } catch (erro) {
-        tratarErro('Erro ao excluir usuário', erro, next);
+        await registrarLog(
+            TiposDeLog.DEBUG,
+            Operacoes.EXCLUSAO,
+            JSON.stringify(erro),
+            req.params.id ?? undefined,
+            next
+        );
     }
 });
 

@@ -12,3 +12,11 @@ model Usuario {
     email String @unique
     // outros campos...
 }
+
+model Log {
+    id        String   @id @default(uuid())
+    tipo      String
+    mensagem  String
+    usuarioId String?
+    timestamp DateTime @default(now())
+}

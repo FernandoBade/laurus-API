@@ -1,21 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 import { UsuarioService } from '../services/usuarioService';
-import { registrarLog, tratarErro, responderAPI } from '../utils/commons';
-import { HTTPStatus, TiposDeLog } from '../utils/enums';
+import { registrarLog, responderAPI } from '../utils/commons';
+import { HTTPStatus, Operacoes, TiposDeLog } from '../utils/enums';
 import { criarUsuarioSchema, atualizarUsuarioSchema } from '../utils/validator';
 
 class UsuarioController {
-    static async cadastrarUsuario(req: Request, res: Response, next: NextFunction) {
+    static async criarUsuario(req: Request, res: Response, next: NextFunction) {
         try {
             const dadosUsuario = req.body;
-            const parseResult = criarUsuarioSchema.safeParse(dadosUsuario);
+            const resultadoParse = criarUsuarioSchema.safeParse(dadosUsuario);
 
-            if (!parseResult.success) {
-                const mensagensDeErro = parseResult.error.errors.map(err => err.message.replace(/"/g, "'"));
+            if (!resultadoParse.success) {
+                const mensagensDeErro = resultadoParse.error.errors.map(err => err.message.replace(/"/g, "'"));
                 return responderAPI(res, HTTPStatus.BAD_REQUEST, { erros: mensagensDeErro });
             }
 
-            const resultado = await UsuarioService.cadastrarUsuario(parseResult.data);
+            const resultado = await UsuarioService.criarUsuario(resultadoParse.data);
 
             if (resultado && 'erro' in resultado) {
                 return responderAPI(
@@ -26,10 +26,21 @@ class UsuarioController {
             }
 
             responderAPI(res, HTTPStatus.CREATED, resultado);
-            await registrarLog(TiposDeLog.SUCESSO, `Usuário cadastrado: ${JSON.stringify(parseResult.data)}`);
+            await registrarLog(
+                TiposDeLog.SUCESSO,
+                Operacoes.CRIACAO,
+                JSON.stringify(resultadoParse.data),
+                resultado.id
+            );
 
         } catch (erro) {
-            tratarErro('Erro ao cadastrar usuário', erro, next);
+            await registrarLog(
+                TiposDeLog.ERRO,
+                Operacoes.CRIACAO,
+                JSON.stringify(erro),
+                req.body?.usuarioId,
+                next
+            );
         }
     }
 
@@ -39,7 +50,13 @@ class UsuarioController {
             responderAPI(res, HTTPStatus.OK, usuarios);
 
         } catch (erro) {
-            tratarErro('Erro ao listar usuários', erro, next);
+            await registrarLog(
+                TiposDeLog.ERRO,
+                Operacoes.BUSCA,
+                JSON.stringify(erro),
+                undefined,
+                next
+            );
         }
     }
 
@@ -54,7 +71,13 @@ class UsuarioController {
             responderAPI(res, HTTPStatus.OK, usuario);
 
         } catch (erro) {
-            tratarErro('Erro ao obter usuário por ID', erro, next);
+            await registrarLog(
+                TiposDeLog.ERRO,
+                Operacoes.BUSCA,
+                JSON.stringify(erro),
+                req.params.id,
+                next
+            );
         }
     }
 
@@ -69,11 +92,17 @@ class UsuarioController {
             if (!usuarios.total) {
                 return responderAPI(res, HTTPStatus.BAD_REQUEST, [], "Nenhum usuário encontrado");
             }
+
             return responderAPI(res, HTTPStatus.OK, usuarios);
 
-
         } catch (erro) {
-            tratarErro('Erro ao buscar usuários', erro, next);
+            await registrarLog(
+                TiposDeLog.ERRO,
+                Operacoes.BUSCA,
+                JSON.stringify(erro),
+                undefined,
+                next
+            );
         }
     }
 
@@ -87,18 +116,29 @@ class UsuarioController {
                 return responderAPI(res, HTTPStatus.BAD_REQUEST, { erros: mensagensDeErro });
             }
 
-            const { id, ...dadosParaAtualizar } = parseResult.data;
-            const usuarioAtualizado = await UsuarioService.atualizarUsuario(id, dadosParaAtualizar);
+            const { ...dadosParaAtualizar } = parseResult.data;
+
+            const usuarioAtualizado = await UsuarioService.atualizarUsuario(req.params.id, dadosParaAtualizar);
 
             if (!usuarioAtualizado) {
                 return responderAPI(res, HTTPStatus.BAD_REQUEST, { mensagem: "Usuário não encontrado" });
             }
 
             responderAPI(res, HTTPStatus.OK, usuarioAtualizado);
-            await registrarLog(TiposDeLog.INFO, `Usuário atualizado: ${JSON.stringify(dadosAtualizados)}`);
-
+            await registrarLog(
+                TiposDeLog.SUCESSO,
+                Operacoes.ATUALIZACAO,
+                JSON.stringify(dadosAtualizados),
+                req.params.id
+            );
         } catch (erro) {
-            tratarErro('Erro ao atualizar usuário', erro, next);
+            await registrarLog(
+                TiposDeLog.ERRO,
+                Operacoes.ATUALIZACAO,
+                JSON.stringify(erro),
+                req.params.id,
+                next
+            );
         }
     }
 
@@ -111,10 +151,21 @@ class UsuarioController {
             }
 
             responderAPI(res, HTTPStatus.OK, resultado ?? undefined, "Usuário excluído com sucesso");
-            await registrarLog(TiposDeLog.INFO, `Usuário excluído: ${resultado.id}`);
+            await registrarLog(
+                TiposDeLog.SUCESSO,
+                Operacoes.EXCLUSAO,
+                JSON.stringify(resultado),
+                undefined
+            );
 
         } catch (erro) {
-            tratarErro('Erro ao excluir usuário', erro, next);
+            await registrarLog(
+                TiposDeLog.ERRO,
+                Operacoes.EXCLUSAO,
+                JSON.stringify(erro),
+                req.params.id,
+                next
+            );
         }
     }
 }

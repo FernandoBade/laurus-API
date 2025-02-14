@@ -8,10 +8,13 @@ datasource db {
 }
 
 model Log {
-    id             String       @id @default(uuid())
-    tipo           String
-    mensagem       String
-    timestamp      DateTime     @default(now())
+    id              String      @id @default(uuid())
+    tipo            String
+    operacao        String?
+    detalhe         String
+    usuarioId       String?
+    usuario         Usuario?    @relation(fields: [usuarioId], references: [id])
+    timestamp       DateTime    @default(now())
 }
 
 model Usuario {
@@ -29,13 +32,14 @@ model Usuario {
     moeda          String?
     formatoData    String?
     contas         Conta[]
+    logs           Log[]
 }
 
 model Conta {
-    id        String            @id @default(uuid())
-    nome      String
-    banco     String
-    tipo      String
-    usuario   Usuario           @relation(fields: [usuarioId], references: [id])
-    usuarioId String
+    id             String       @id @default(uuid())
+    nome           String
+    banco          String
+    tipo           String
+    usuario        Usuario      @relation(fields: [usuarioId], references: [id])
+    usuarioId      String
 }

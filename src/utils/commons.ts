@@ -1,7 +1,7 @@
 import { createLogger, format, transports, addColors } from 'winston';
 import { NextFunction } from 'express';
 import { LogService } from '../services/logService';
-import { HTTPStatus, TiposDeLog } from './enums';
+import { HTTPStatus, TiposDeLog, Operacoes } from './enums';
 import { Response } from 'express';
 
 //#region 🔹 Logger
@@ -30,7 +30,7 @@ const logger = createLogger({
     format: format.combine(
         format.timestamp(),
         format.colorize({ all: true }),
-        format.printf(({ timestamp, level, message }) => `${timestamp} [${level}]: ${message}`)
+        format.printf(({ timestamp, level, message }) => `[${timestamp}][${level}]${message}`)
     ),
     transports: [
         new transports.Console({
@@ -39,38 +39,53 @@ const logger = createLogger({
     ]
 });
 
+
 /**
  * Registra uma mensagem de log.
  *
- * @param tipo - Tipo de log (ERRO, ALERTA, SUCESSO, INFO, DEBUG).
- * @param mensagem - Mensagem a ser registrada.
- *
- * Usa o `logger` para mostrar no console e o `LogService` para salvar. O nível DEBUG não é salvo.
+ * @param tipoDeLog - Tipo de log (ERRO, ALERTA, SUCESSO, INFO, DEBUG).
+ * @param operacao - Tipo de operação realizada.
+ * @param detalhe - Detalhe da operação ou erro.
+ * @param usuarioId - ID do usuário associado ao log (opcional).
+ * @param next - Função do Express para continuar o fluxo (opcional).
  */
+export async function registrarLog(tipoDeLog: TiposDeLog, operacao: Operacoes, detalhe: string, usuarioId?: string, next?: NextFunction) {
 
-export async function registrarLog(tipo: TiposDeLog, mensagem: string) {
-    logger.log(tipo, mensagem);
-    await LogService.registrarLog(tipo, mensagem);
+    logger.log(tipoDeLog, `[${operacao}]: ${detalhe}`);
+
+    if (tipoDeLog === TiposDeLog.ERRO) {
+        next?.(new Error(detalhe));
+    }
+
+    if (![TiposDeLog.DEBUG].includes(tipoDeLog)) {
+        await LogService.registrarLog(tipoDeLog, operacao, detalhe, usuarioId);
+    }
+}
+
+/**
+ * Busca logs associados a um usuário específico.
+ *
+ * @param usuarioId - ID do usuário cujos logs devem ser buscados.
+ * @returns Uma lista de logs associados ao usuário.
+ */
+export async function buscarLogsPorUsuario(usuarioId: string) {
+    try {
+        const logs = await LogService.buscarLogsPorUsuario(usuarioId);
+        return logs;
+    } catch (erro) {
+        await registrarLog(
+            TiposDeLog.DEBUG,
+            Operacoes.BUSCA,
+            JSON.stringify(erro),
+            usuarioId
+        );
+        throw new Error('Erro ao buscar logs.');
+    }
 }
 
 // #endregion 🔹 Logger
 
 // #region 🔹 Tratamentos gerais de respostas e erros
-/**
- * Lida com um erro, registrando no banco e passando adiante.
- *
- * @param erro - O erro que ocorreu.
- * @param mensagem - Mensagem extra para contexto.
- * @param next - Função do Express para continuar o fluxo.
- *
- * Registra o erro com `registrarLog` e chama `next` para seguir o baile.
- */
-export async function tratarErro(mensagem: string, erro: unknown, next: NextFunction) {
-    const mensagemErro = (erro instanceof Error) ? erro.message : 'Erro desconhecido';
-    await registrarLog(TiposDeLog.ERRO, `${mensagem}: ${mensagemErro}`);
-    next(new Error(mensagemErro));
-}
-
 /**
  * Responde a uma requisição com uma estrutura padrão.
  *

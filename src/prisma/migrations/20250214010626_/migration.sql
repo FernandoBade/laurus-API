@@ -2,8 +2,11 @@
 CREATE TABLE "Log" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "tipo" TEXT NOT NULL,
-    "mensagem" TEXT NOT NULL,
-    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "operacao" TEXT,
+    "detalhe" TEXT NOT NULL,
+    "usuarioId" TEXT,
+    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Log_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable
