@@ -8,8 +8,19 @@ datasource db {
 }
 
 model Usuario {
-    id    String @id @default(uuid())
-    email String @unique
+    id             String   @id @default(uuid())
+    nome           String
+    sobrenome      String
+    email          String   @unique
+    telefone       String?
+    senha          String
+    dataNascimento DateTime?
+    ativo          Boolean  @default(true)
+    dataCadastro   DateTime @default(now())
+    aparencia      String?
+    idioma         String?
+    moeda          String?
+    formatoData    String?
     // outros campos...
 }
 

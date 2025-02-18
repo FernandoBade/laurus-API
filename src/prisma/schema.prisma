@@ -24,7 +24,7 @@ model Usuario {
     email          String       @unique
     telefone       String?
     senha          String
-    dataNascimento DateTime?
+    dataNascimento DateTime
     ativo          Boolean      @default(true)
     dataCadastro   DateTime     @default(now())
     aparencia      String?
