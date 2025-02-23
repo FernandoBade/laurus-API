@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { TiposDeLog, Operacoes } from '../utils/enums';
-import { registrarLog } from '../utils/commons';
+import { TiposDeLog, Operacoes, HTTPStatus } from '../utils/enums';
+import { registrarLog, responderAPI } from '../utils/commons';
 import UsuarioController from '../controllers/usuarioController';
 const router = Router();
 
@@ -44,7 +44,7 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
     }
 });
 
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id?', async (req: Request, res: Response, next: NextFunction) => {
     try {
         UsuarioController.excluirUsuario(req, res, next);
     } catch (erro) {

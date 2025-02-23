@@ -6,14 +6,22 @@ const prisma = new PrismaClient();
 
 export class LogService {
     static async registrarLog(tipo: TiposDeLog, operacao: Operacoes, detalhe: string, usuarioId?: string) {
+        let usuario = null;
+
+        if (usuarioId) {
+            usuario = await prisma.usuario.findUnique({
+                where: { id: usuarioId }
+            });
+        }
+
         if (tipo !== TiposDeLog.DEBUG) {
             await prisma.log.create({
                 data: {
                     tipo: tipo,
-                    operacao,
-                    detalhe,
-                    usuarioId,
-                },
+                    operacao: operacao,
+                    detalhe: detalhe,
+                    usuarioId: usuario ? usuario.id : null
+                }
             });
         }
     }

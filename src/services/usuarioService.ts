@@ -12,7 +12,7 @@ export class UsuarioService {
         });
 
         if (usuarioExistente) {
-            throw new Error("O e-mail já está em uso");
+            return { erro: 'O e-mail já está em uso' };
         }
 
         const senhaCrypto = await bcrypt.hash(dados.senha, 10);
@@ -34,7 +34,7 @@ export class UsuarioService {
     static async obterUsuarioPorId(id: string) {
         const usuario = await prisma.usuario.findUnique({ where: { id } });
         if (!usuario) {
-            throw new Error("Usuário não encontrado");
+            return { erro: "Usuário não encontrado" };
         }
         return usuario;
     }
@@ -51,7 +51,7 @@ export class UsuarioService {
         const usuarioExistente = await prisma.usuario.findUnique({ where: { id } });
 
         if (!usuarioExistente) {
-            throw new Error("Usuário não encontrado");
+            return { erro: "Usuário não encontrado" }
         }
 
         return prisma.usuario.update({
@@ -64,7 +64,7 @@ export class UsuarioService {
         const usuarioExistente = await prisma.usuario.findUnique({ where: { id } });
 
         if (!usuarioExistente) {
-            throw new Error("Usuário não encontrado");
+            return { erro: "Usuário não encontrado" }
         }
 
         await prisma.usuario.delete({ where: { id } });
