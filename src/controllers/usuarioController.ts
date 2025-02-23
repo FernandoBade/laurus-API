@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UsuarioService } from '../services/usuarioService';
 import { registrarLog, responderAPI } from '../utils/commons';
-import { HTTPStatus, Operacoes, TiposDeLog } from '../utils/enums';
+import { CategoriasDeLog, HTTPStatus, Operacoes, TiposDeLog } from '../utils/enums';
 import { criarUsuarioSchema, atualizarUsuarioSchema } from '../utils/validator';
 
 class UsuarioController {
@@ -21,11 +21,11 @@ class UsuarioController {
                 return responderAPI(res, HTTPStatus.BAD_REQUEST, { erro: usuarioCriado.erro });
             }
 
-            await registrarLog(TiposDeLog.INFO, Operacoes.CRIACAO, JSON.stringify(dadosUsuario), usuarioCriado.id);
+            await registrarLog(TiposDeLog.SUCESSO, Operacoes.CRIACAO, CategoriasDeLog.USUARIO, JSON.stringify(dadosUsuario), usuarioCriado.id);
             return responderAPI(res, HTTPStatus.CREATED, usuarioCriado);
 
         } catch (erro) {
-            await registrarLog(TiposDeLog.ERRO, Operacoes.CRIACAO, JSON.stringify(erro), undefined, next);
+            await registrarLog(TiposDeLog.ERRO, Operacoes.CRIACAO, CategoriasDeLog.USUARIO, JSON.stringify(erro), undefined, next);
             return responderAPI(res, HTTPStatus.INTERNAL_SERVER_ERROR, { erro: "Erro ao criar usuário" });
         }
     }
@@ -37,7 +37,7 @@ class UsuarioController {
             return responderAPI(res, HTTPStatus.OK, usuarios);
 
         } catch (erro) {
-            await registrarLog(TiposDeLog.ERRO, Operacoes.BUSCA, JSON.stringify(erro), undefined, next);
+            await registrarLog(TiposDeLog.ERRO, Operacoes.BUSCA, CategoriasDeLog.USUARIO, JSON.stringify(erro), undefined, next);
             return responderAPI(res, HTTPStatus.INTERNAL_SERVER_ERROR, { erro: "Erro ao listar usuários" });
         }
     }
@@ -59,7 +59,7 @@ class UsuarioController {
             return responderAPI(res, HTTPStatus.OK, usuario);
 
         } catch (erro) {
-            await registrarLog(TiposDeLog.ERRO, Operacoes.BUSCA, JSON.stringify(erro), usuarioId, next);
+            await registrarLog(TiposDeLog.ERRO, Operacoes.BUSCA, CategoriasDeLog.USUARIO, JSON.stringify(erro), usuarioId, next);
             return responderAPI(res, HTTPStatus.INTERNAL_SERVER_ERROR, { erro: "Erro ao obter usuário" });
         }
     }
@@ -80,7 +80,7 @@ class UsuarioController {
             return responderAPI(res, HTTPStatus.OK, usuarios);
 
         } catch (erro) {
-            await registrarLog(TiposDeLog.ERRO, Operacoes.BUSCA, JSON.stringify(erro), undefined, next);
+            await registrarLog(TiposDeLog.ERRO, Operacoes.BUSCA, CategoriasDeLog.USUARIO, JSON.stringify(erro), undefined, next);
             return responderAPI(res, HTTPStatus.INTERNAL_SERVER_ERROR, { erro: "Erro ao obter usuário" });
         }
     }
@@ -107,11 +107,11 @@ class UsuarioController {
             }
 
             responderAPI(res, HTTPStatus.OK, usuarioAtualizado);
-            await registrarLog(TiposDeLog.INFO, Operacoes.ATUALIZACAO, JSON.stringify(dadosAtualizados), req.params.id);
+            await registrarLog(TiposDeLog.SUCESSO, Operacoes.ATUALIZACAO, CategoriasDeLog.USUARIO, JSON.stringify(dadosAtualizados), req.params.id);
             return;
 
         } catch (erro) {
-            await registrarLog(TiposDeLog.ERRO, Operacoes.ATUALIZACAO, JSON.stringify(erro), req.params.id, next);
+            await registrarLog(TiposDeLog.ERRO, Operacoes.ATUALIZACAO, CategoriasDeLog.USUARIO, JSON.stringify(erro), req.params.id, next);
             return responderAPI(res, HTTPStatus.INTERNAL_SERVER_ERROR, { erro: "Erro ao atualizar usuário" });
         }
     }
@@ -131,10 +131,10 @@ class UsuarioController {
             }
 
             responderAPI(res, HTTPStatus.OK, { id: usuarioId }, "Usuário excluído com sucesso");
-            return registrarLog(TiposDeLog.SUCESSO, Operacoes.EXCLUSAO, JSON.stringify({ tipo: "Usuário", id: usuarioId }), undefined);
+            return registrarLog(TiposDeLog.SUCESSO, Operacoes.EXCLUSAO, CategoriasDeLog.USUARIO, JSON.stringify({ tipo: "Usuário", id: usuarioId }), undefined);
 
         } catch (erro) {
-            await registrarLog(TiposDeLog.ERRO, Operacoes.EXCLUSAO, JSON.stringify(erro), usuarioId, next);
+            await registrarLog(TiposDeLog.ERRO, Operacoes.EXCLUSAO, CategoriasDeLog.USUARIO, JSON.stringify(erro), usuarioId, next);
             return responderAPI(res, HTTPStatus.INTERNAL_SERVER_ERROR, { erro: "Erro ao excluir usuário" });
         }
     }

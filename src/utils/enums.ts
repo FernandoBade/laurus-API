@@ -6,6 +6,11 @@ export enum TiposDeLog {
     DEBUG = 'debug',
 }
 
+export enum CategoriasDeLog {
+    USUARIO = 'usuario',
+    LOG = "LOG",
+}
+
 export enum HTTPStatus {
     OK = 200,
     CREATED = 201,

@@ -1,11 +1,11 @@
 import { PrismaClient } from '@prisma/client';
-import { TiposDeLog, Operacoes } from '../utils/enums';
+import { TiposDeLog, Operacoes, CategoriasDeLog } from '../utils/enums';
 import { registrarLog } from '../utils/commons';
 
 const prisma = new PrismaClient();
 
 export class LogService {
-    static async registrarLog(tipo: TiposDeLog, operacao: Operacoes, detalhe: string, usuarioId?: string) {
+    static async registrarLog(tipo: TiposDeLog, operacao: Operacoes, categoria: CategoriasDeLog, detalhe: string, usuarioId?: string) {
         let usuario = null;
 
         if (usuarioId) {
@@ -20,6 +20,7 @@ export class LogService {
                     tipo: tipo,
                     operacao: operacao,
                     detalhe: detalhe,
+                    categoria: categoria,
                     usuarioId: usuario ? usuario.id : null
                 }
             });
@@ -41,6 +42,7 @@ export class LogService {
         registrarLog(
             TiposDeLog.INFO,
             Operacoes.EXCLUSAO,
+            CategoriasDeLog.LOG,
             `Total de logs deletados: ${resultado.count}`
         );
         return resultado.count;

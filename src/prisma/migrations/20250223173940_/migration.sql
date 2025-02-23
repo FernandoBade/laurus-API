@@ -3,6 +3,7 @@ CREATE TABLE "Log" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "tipo" TEXT NOT NULL,
     "operacao" TEXT,
+    "categoria" TEXT,
     "detalhe" TEXT NOT NULL,
     "usuarioId" TEXT,
     "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -1,7 +1,7 @@
 import { createLogger, format, transports, addColors } from 'winston';
 import { NextFunction } from 'express';
 import { LogService } from '../services/logService';
-import { HTTPStatus, TiposDeLog, Operacoes } from './enums';
+import { HTTPStatus, TiposDeLog, Operacoes, CategoriasDeLog } from './enums';
 import { Response } from 'express';
 
 //#region 🔹 Logger
@@ -49,16 +49,16 @@ const logger = createLogger({
  * @param usuarioId - ID do usuário associado ao log (opcional).
  * @param next - Função do Express para continuar o fluxo (opcional).
  */
-export async function registrarLog(tipoDeLog: TiposDeLog, operacao: Operacoes, detalhe: string, usuarioId?: string, next?: NextFunction) {
+export async function registrarLog(tipoDeLog: TiposDeLog, operacao: Operacoes, categoria: CategoriasDeLog, detalhe: string, usuarioId?: string, next?: NextFunction) {
 
-    logger.log(tipoDeLog, `[${operacao}]: ${detalhe}`);
+    logger.log(tipoDeLog, `[${operacao}][${categoria}]: ${detalhe}`);
 
     if (tipoDeLog === TiposDeLog.ERRO) {
         next?.(new Error(detalhe));
     }
 
     if (![TiposDeLog.DEBUG].includes(tipoDeLog)) {
-        await LogService.registrarLog(tipoDeLog, operacao, detalhe, usuarioId);
+        await LogService.registrarLog(tipoDeLog, operacao, categoria, detalhe, usuarioId);
     }
 }
 
@@ -76,6 +76,7 @@ export async function buscarLogsPorUsuario(usuarioId: string) {
         await registrarLog(
             TiposDeLog.DEBUG,
             Operacoes.BUSCA,
+            CategoriasDeLog.LOG,
             JSON.stringify(erro),
             usuarioId
         );
